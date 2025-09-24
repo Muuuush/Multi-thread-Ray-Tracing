@@ -61,7 +61,7 @@ int main()
 
     cam.aspect = 16.0 / 9.0;
     cam.img_width = 800;
-    cam.samples_per_pixel = 200;
+    cam.samples_per_pixel = 20;
     cam.terminated_posibility = 0.02;
 
     cam.vfov = 20;

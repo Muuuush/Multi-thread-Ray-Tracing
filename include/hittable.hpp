@@ -12,7 +12,7 @@ struct hit_record
     vec3 normal;
     double t;
     bool front_face;
-    shared_ptr<material> material;
+    shared_ptr<material> mat;
 
     void set_face_norm(const ray& r, const vec3& outward_norm)
     {

@@ -184,7 +184,7 @@ private:
         {
             ray scattered;
             color attenuation;
-            if (record.material->scatter(r, record, attenuation, scattered))
+            if (record.mat->scatter(r, record, attenuation, scattered))
                 return attenuation * ray_color(scattered, world) / (1 - terminated_posibility);
             return color();
         }
