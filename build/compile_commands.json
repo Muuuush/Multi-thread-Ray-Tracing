@@ -1,8 +1,0 @@
-[
-{
-  "directory": "D:/coding/ray-tracing-in-one-weekend/build",
-  "command": "C:\\PROGRA~1\\mingw64\\bin\\C__~1.EXE -ID:/coding/ray-tracing-in-one-weekend/./dep -ID:/coding/ray-tracing-in-one-weekend/./include -g -std=gnu++20 -o CMakeFiles\\main.dir\\main.cpp.obj -c D:\\coding\\ray-tracing-in-one-weekend\\main.cpp",
-  "file": "D:/coding/ray-tracing-in-one-weekend/main.cpp",
-  "output": "D:/coding/ray-tracing-in-one-weekend/build/CMakeFiles/main.dir/main.cpp.obj"
-}
-]

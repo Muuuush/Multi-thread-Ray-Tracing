@@ -1,3 +1,0 @@
-D:/coding/ray-tracing-in-one-weekend/build/CMakeFiles/main.dir
-D:/coding/ray-tracing-in-one-weekend/build/CMakeFiles/edit_cache.dir
-D:/coding/ray-tracing-in-one-weekend/build/CMakeFiles/rebuild_cache.dir
