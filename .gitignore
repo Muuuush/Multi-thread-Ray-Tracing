@@ -1,4 +1,4 @@
-./.cache/
-./build/
-./*.png
-./compile_commands.json
+.cache/
+build/
+*.png
+compile_commands.json
