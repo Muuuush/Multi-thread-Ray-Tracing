@@ -1,0 +1,6 @@
+[submodule "dep/stb"]
+	path = dep/stb
+	url = https://github.com/nothings/stb
+[submodule "dep/BBLog"]
+	path = dep/BBLog
+	url = https://github.com/Muuuush/BBLog
