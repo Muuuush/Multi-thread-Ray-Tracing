@@ -61,10 +61,10 @@ public:
 
         for (int j = 0; j < img_height; j++)
         {
-            std::cout << "\rRendered: " << rendered_pixels << " / " << total_pixels;
             const auto now_time = std::chrono::system_clock::now();
             const std::chrono::duration<double> duration = now_time - start_time;
             const double percentage = static_cast<double>(rendered_pixels) / total_pixels;
+            std::cout << "\rRendered: " << rendered_pixels << " / " << total_pixels;
             std::cout << " || " << static_cast<int>(percentage * 1000) / 10.0 << "%";
             std::cout << " || " << duration.count() << " / " << (duration.count() / percentage) << " seconds                           ";
             std::flush(std::cout);
@@ -72,10 +72,16 @@ public:
             auto render_pixel = [&](int from, int to) {
                 for (int i = from; i < to; i++)
                 {
-                    color pixel_color;
+                    std::vector<color> ray_results(samples_per_pixel);
                     for (int sample = 0; sample < samples_per_pixel; sample++)
-                        pixel_color = pixel_color + ray_color(get_ray(i, j), world);
-                    write_color(img, pixel_samples_scales * pixel_color, i, j, img_width, n);
+                    {
+                        ray_results[sample] = ray_cast(get_ray(i, j), world);
+                    }
+
+                    color pixel_color(0, 0, 0);
+                    for (const auto& res : ray_results)
+                        pixel_color = pixel_color + (res / samples_per_pixel);
+                    write_color(img, pixel_color, i, j, img_width, n);
                 }
             };
 
@@ -108,7 +114,6 @@ private:
     point3 pixel00;
     vec3 delta_u;
     vec3 delta_v;
-    double pixel_samples_scales;
     vec3 u, v, w;
     vec3 defocus_disk_u;
     vec3 defocus_disk_v;
@@ -142,9 +147,6 @@ private:
         auto defocus_radius = focus_dist * std::tan(degrees_to_radians(defocus_angle / 2));
         defocus_disk_u = u * defocus_radius;
         defocus_disk_v = v * defocus_radius;
-
-        // sampling
-        pixel_samples_scales = 1.0 / samples_per_pixel;
     }
 
     ray get_ray(int i, int j) const
@@ -158,7 +160,7 @@ private:
         auto ray_origin = (defocus_angle <= 0) ? center : defocus_disk_sample();
         auto ray_direction = pixel_sample - ray_origin;
 
-        return ray(ray_origin, ray_direction);
+        return ray(ray_origin, unit_vector(ray_direction));
     }
 
     vec3 sample_square() const
@@ -174,7 +176,7 @@ private:
         return center + (p[0] * defocus_disk_u) + (p[1] * defocus_disk_v);
     }
 
-    color ray_color(const ray& r, const hittable& world) const
+    color ray_cast(const ray& r, const hittable& world) const
     {
         if (random_double() <= terminated_posibility)
             return color(0, 0, 0);
@@ -184,11 +186,22 @@ private:
         {
             ray scattered;
             color attenuation;
-            if (record.mat->scatter(r, record, attenuation, scattered))
-                return attenuation * ray_color(scattered, world) / (1 - terminated_posibility);
-            return color();
+            double p;
+            if (record.mat->scatter(r, record, attenuation, scattered, p))
+            {
+                auto scatter_result = ray_cast(scattered, world);
+                auto cos_theta = dot(scattered.direction(), record.normal);
+                // p * cos_theta is cancelled out
+                // auto result = attenuation * p * scatter_result * cos_theta
+                //     / (p * cos_theta * (1 - terminated_posibility));
+                auto result = attenuation * scatter_result / (1 - terminated_posibility);
+                return result;
+            }
+            return color(0, 0, 0);
         }
 
+        // don't hit anything
+        // return the background color
         vec3 unit_direction = unit_vector(r.direction());
         auto a = 0.5 * (unit_direction.y() + 1.0);
         return (1.0 - a) * color(1.0, 1.0, 1.0) + a * color(0.5, 0.7, 1.0);

@@ -14,6 +14,7 @@ inline uchar color_f2i(double x)
 
 inline double gamma_correct(double x)
 {
+    return x;
     if (x > 0)
         return std::sqrt(x);
     return 0;

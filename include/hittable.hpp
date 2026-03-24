@@ -18,6 +18,7 @@ struct hit_record
     {
         front_face = dot(r.direction(), outward_norm) < 0;
         normal = front_face ? outward_norm : -outward_norm;
+        normal = unit_vector(normal);
     }
 };
 

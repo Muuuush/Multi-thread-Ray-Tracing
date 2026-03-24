@@ -6,7 +6,8 @@ class ray
 {
 public:
     ray() {}
-    ray(const point3& origin, const vec3& direction) : orig(origin), dir(direction) {}
+    ray(const point3& origin, const vec3& direction)
+        : orig(origin), dir(direction), importance(1) {}
 
     const point3& origin() const { return orig; }
     const point3& direction() const { return dir; }
@@ -19,4 +20,5 @@ public:
 private:
     point3 orig;
     vec3 dir;
+    double importance;
 };

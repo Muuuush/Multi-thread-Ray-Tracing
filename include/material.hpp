@@ -9,7 +9,7 @@ public:
     virtual ~material() = default;
 
     virtual bool scatter(
-        const ray& r_in, const hit_record& record, color& attenuation, ray& scattered)
+        const ray& r_in, const hit_record& record, color& attenuation, ray& scattered, double& p)
         const
     {
         return false;
@@ -21,14 +21,24 @@ class lambertian : public material
 public:
     lambertian(const color& albedo) : albedo(albedo) {}
     bool scatter(
-        const ray& r_in, const hit_record& record, color& attenuation, ray& scattered)
+        const ray& r_in, const hit_record& record, color& attenuation, ray& scattered, double& p)
         const override
     {
         auto scattered_direction = record.normal + vec3::random_unit();
         if (scattered_direction.near_zero())
             scattered_direction = record.normal;
-        scattered = ray(record.p, scattered_direction);
+        double accept_p = 0;
+        vec3 dir;
+        do
+        {
+            dir = vec3::random_on_hemisphere(record.normal);
+            accept_p = dot(dir, record.normal);
+        } while (random_double() > accept_p);
+        scattered = ray(record.p, dir);
         attenuation = albedo;
+
+        auto theta = std::acos(dot(dir, record.normal));
+        p = std::sin(theta * 2) / 2 / pi;
         return true;
     }
 
@@ -42,17 +52,29 @@ public:
     metal(const color& albedo, double fuzz = 0.0)
         : albedo(albedo), fuzz(std::fmin(fuzz, 1)) {}
     bool scatter(
-        const ray& r_in, const hit_record& record, color& attenuation, ray& scattered)
+        const ray& r_in, const hit_record& record, color& attenuation, ray& scattered, double& p)
         const override
     {
         vec3 reflected = reflect(r_in.direction(), record.normal).unit();
-        vec3 fuzzed;
-        do {
-            fuzzed = reflected + (fuzz * vec3::random_unit());
-        } while (dot(fuzzed, record.normal) < 0);
-        scattered = ray(record.p, fuzzed);
+
+        vec3 u0 = cross(record.normal, reflected);
+        while (u0.near_zero())
+            u0 = cross(record.normal, record.normal + vec3::random_unit());
+        vec3 v0 = cross(u0, reflected);
+        vec3 u = u0.unit();
+        vec3 v = v0.unit();
+
+        auto rand_unit = vec3::random_in_unit_disk();
+        auto rand_fuzz = fuzz * rand_unit;
+        auto fuzzed = reflected + rand_fuzz.x() * u + rand_fuzz.y() * v;
+
+        scattered = ray(record.p, unit_vector(fuzzed));
         attenuation = albedo;
-        return true;
+        p = 1;
+
+        // if dot product is negative
+        // then scatter failed with p
+        return dot(fuzzed, record.normal) >= 0;
     }
 
 private:
@@ -65,7 +87,7 @@ class dielectric : public material
 public:
     dielectric(double refraction_index) : refraction_index(refraction_index) {}
 
-    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered)
+    bool scatter(const ray& r_in, const hit_record& rec, color& attenuation, ray& scattered, double& p)
         const override
     {
         attenuation = color(1.0, 1.0, 1.0);
@@ -78,12 +100,19 @@ public:
         bool cannot_refract = ri * sin_theta > 1.0;
         vec3 direction;
 
-        if (cannot_refract || reflectance(cos_theta, ri) > random_double())
+        double reflectance = this->reflectance(cos_theta, ri);
+        if (cannot_refract || reflectance > random_double())
+        {
             direction = reflect(unit_direction, rec.normal);
+            p = reflectance;
+        }
         else
+        {
             direction = refract(unit_direction, rec.normal, ri);
+            p = 1 - reflectance;
+        }
 
-        scattered = ray(rec.p, direction);
+        scattered = ray(rec.p, unit_vector(direction));
         return true;
     }
 
