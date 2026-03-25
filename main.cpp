@@ -1,3 +1,4 @@
+#include "bvh.hpp"
 #include "camera.hpp"
 #include "hittable_list.hpp"
 #include "material.hpp"
@@ -57,6 +58,10 @@ int main()
     auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
+    bb::log("Begin building bvh...");
+    auto world_bvh = bvh(world.objects);
+    bb::log("bvh has been built");
+
     camera cam;
 
     cam.aspect = 16.0 / 9.0;
@@ -72,6 +77,6 @@ int main()
     cam.defocus_angle = 0.6;
     cam.focus_dist = 10.0;
 
-    cam.render(world);
+    cam.render(world_bvh);
     return 0;
 }

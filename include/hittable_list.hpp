@@ -3,6 +3,7 @@
 #include <vector>
 
 #include "hittable.hpp"
+#include "AABB.hpp"
 
 class hittable_list : public hittable
 {
@@ -34,4 +35,8 @@ public:
 
         return hit_anything;
     }
+
+   virtual AABB get_AABB() const override {
+        return AABB();
+   }
 };

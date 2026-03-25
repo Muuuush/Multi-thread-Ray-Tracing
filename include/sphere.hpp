@@ -2,6 +2,7 @@
 
 #include "hittable.hpp"
 #include "material.hpp"
+#include "AABB.hpp"
 
 class sphere : public hittable
 {
@@ -36,6 +37,13 @@ public:
         record.mat = mat;
 
         return true;
+    }
+
+    virtual AABB get_AABB() const override {
+        return AABB(
+            center - vec3(radius, radius, radius),
+            center + vec3(radius, radius, radius)
+        );
     }
 
 private:
