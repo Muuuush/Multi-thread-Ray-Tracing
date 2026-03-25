@@ -9,6 +9,7 @@
 #include <stb/stb_image.h>
 #include <stb/stb_image_write.h>
 #include <thread>
+#include <format>
 
 #include "hittable.hpp"
 #include "material.hpp"
@@ -35,7 +36,7 @@ public:
     int samples_per_pixel = 10;
     double terminated_posibility = 0.05;
 
-    int thread_num = 16;
+    int thread_num = 12;
 
     camera() = default;
 
@@ -54,48 +55,53 @@ public:
         // output image
         const int total_pixels = img_width * img_height;
         const auto start_time = std::chrono::system_clock::now();
-        int rendered_pixels = 0;
+        std::atomic_int rendered_pixels = 0;
         uchar* img = new uchar[total_pixels * n];
 
         std::vector<std::thread> threads(thread_num);
 
-        for (int j = 0; j < img_height; j++)
+        auto render_pixel = [&](int row_begin, int row_end) {
+            for (int i = row_begin; i < row_end; i++)
+            {
+                for (int j = 0; j < img_height; j++)
+                {
+                    color pixel_color(0, 0, 0);
+                    for (int sample = 0; sample < samples_per_pixel; sample++)
+                    {
+                        pixel_color = pixel_color + ray_cast(get_ray(i, j), world);
+                    }
+                    pixel_color = pixel_color / samples_per_pixel;
+
+                    write_color(img, pixel_color, i, j, img_width, n);
+                }
+                rendered_pixels += img_height;
+            }
+        };
+
+        const int step = img_width / thread_num;
+        for (int t = 0; t < thread_num; t++)
+        {
+            if (t < thread_num - 1)
+                threads[t] = std::thread(render_pixel, step * t, step * t + step);
+            else
+                threads[t] = std::thread(render_pixel, step * t, img_width);
+        }
+
+        while (rendered_pixels < total_pixels)
         {
             const auto now_time = std::chrono::system_clock::now();
             const std::chrono::duration<double> duration = now_time - start_time;
             const double percentage = static_cast<double>(rendered_pixels) / total_pixels;
-            std::cout << "\rRendered: " << rendered_pixels << " / " << total_pixels;
-            std::cout << " || " << static_cast<int>(percentage * 1000) / 10.0 << "%";
-            std::cout << " || " << duration.count() << " / " << (duration.count() / percentage) << " seconds                           ";
-            std::flush(std::cout);
+            std::cout << std::format("\rRendered: {:>10} / {:<10} || {:>6.1f}% || {:>8.1f} / {:>8.1f} seconds",
+                                     static_cast<int>(rendered_pixels), total_pixels, percentage * 100.0,
+                                     duration.count(), duration.count() / percentage)
+                      << std::flush;
 
-            auto render_pixel = [&](int from, int to) {
-                for (int i = from; i < to; i++)
-                {
-                    std::vector<color> ray_results(samples_per_pixel);
-                    for (int sample = 0; sample < samples_per_pixel; sample++)
-                    {
-                        ray_results[sample] = ray_cast(get_ray(i, j), world);
-                    }
-
-                    color pixel_color(0, 0, 0);
-                    for (const auto& res : ray_results)
-                        pixel_color = pixel_color + (res / samples_per_pixel);
-                    write_color(img, pixel_color, i, j, img_width, n);
-                }
-            };
-
-            const int step = img_width / thread_num;
-            for (int t = 0; t < thread_num; t++)
-            {
-                if (t < thread_num - 1)
-                    threads[t] = std::thread(render_pixel, step * t, step * t + step);
-                else
-                    threads[t] = std::thread(render_pixel, step * t, img_width);
-            }
-            for (int t = 0; t < thread_num; t++)
-                threads[t].join();
-            rendered_pixels += img_width;
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        for (auto& t : threads)
+        {
+            t.join();
         }
         std::cout << "\r" << std::flush;
 
