@@ -2,7 +2,7 @@
 
 This is a simple ray tracing renderer that support multi-thread rendering on CPU.
 
-[example image](./example.png)
+![example image](example.png)
 
 # Features
 
